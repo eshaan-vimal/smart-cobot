@@ -1,0 +1,8 @@
+opencv-python
+numpy
+pillow
+SpeechRecognition
+PyAudio
+google-genai
+python-dotenv
+pymycobot
