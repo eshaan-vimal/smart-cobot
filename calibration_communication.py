@@ -105,7 +105,9 @@ def get_real_coords(u, v):
     """Convert pixel coordinates to robot coordinates"""
     pixel_point = np.array([[[u, v]]], dtype='float32')
     real = cv2.perspectiveTransform(pixel_point, matrix)
-    return real[0][0]
+    # Convert numpy float32 to Python float for JSON serialization
+    x, y = real[0][0]
+    return float(x), float(y)
 
 def is_within_workspace(x, y, z=150):
     """Check if coordinates are safe for the robot"""
