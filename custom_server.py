@@ -1,9 +1,22 @@
+"""
+Robot Command TCP Server
+
+This script runs on the Raspberry Pi connected to MyCobot.
+It listens for commands from the laptop and controls robot movement.
+
+Steps:
+1. Run this script on the Pi
+2. Connect from laptop using TCP socket on port 5000
+3. Send JSON commands: {"cmd": "move", "coords": [...], "speed": 30}
+4. The robot moves and returns status messages
+"""
+
 import socket
 import json
 import time
 from pymycobot.mycobot280 import MyCobot280
 
-# --- CONFIGURATION ---
+# Robot + serial configuration
 SERIAL_PORT = '/dev/ttyAMA0' 
 BAUD_RATE = 1000000
 
@@ -12,16 +25,12 @@ try:
     # Initialize MyCobot280 (not MyCobot!)
     mc = MyCobot280(SERIAL_PORT, BAUD_RATE)
     
-    # CRITICAL: Check and set fresh mode EXACTLY as in documentation
-    if mc.get_fresh_mode() != 1:
-        mc.set_fresh_mode(1)
-        time.sleep(0.5)
-    
-    # Power on the robot
     mc.power_on()
     time.sleep(2)
     
-    # Check if powered on
+    mc.set_fresh_mode(1)
+    time.sleep(0.5)
+    
     if mc.is_power_on():
         print("✅ Motors powered ON")
     else:
@@ -29,13 +38,9 @@ try:
         mc.power_on()
         time.sleep(2)
     
-    # Set initial LED color
-    mc.set_color(0, 0, 255)  # Blue = idle
-    
+    mc.set_color(0, 0, 255)
     print("✅ Robot Ready & Powered On.")
-    print(f"   Fresh Mode: {mc.get_fresh_mode()}")
     
-    # Get and print current position
     try:
         current_coords = mc.get_coords()
         print(f"   Current Position: {current_coords}")
@@ -48,19 +53,19 @@ except Exception as e:
     traceback.print_exc()
     exit()
 
-# --- SAFETY LIMITS ---
+# Safety limits for XYZ workspace
 def is_valid_coords(coords):
-    """Validate coordinates"""
     if len(coords) < 6:
-        print(f"⚠️ Invalid coords length: {len(coords)}, need 6")
         return False
     
     x, y, z = coords[0], coords[1], coords[2]
-    rx, ry, rz = coords[3], coords[4], coords[5]
     
-    # From documentation: x,y,z range is -280 ~ 280, rx,ry,rz range is -314 ~ 314
-    if not (-280 <= x <= 280):
-        print(f"⚠️ X={x} out of range [-280, 280]")
+    X_MIN, X_MAX = -280, 280
+    Y_MIN, Y_MAX = -280, 280
+    Z_MIN, Z_MAX = -70, 280
+    
+    if not (X_MIN <= x <= X_MAX):
+        print(f"⚠️ X={x} out of range [{X_MIN}, {X_MAX}]")
         return False
     if not (-280 <= y <= 280):
         print(f"⚠️ Y={y} out of range [-280, 280]")
@@ -80,7 +85,7 @@ def is_valid_coords(coords):
     
     return True
 
-# --- SERVER SETUP ---
+# TCP server configuration
 HOST = "0.0.0.0" 
 PORT = 5000
 
@@ -92,13 +97,12 @@ server.listen(1)
 print(f"🚀 Server Listening on Port {PORT}...")
 
 while True:
-    print("\nWaiting for Laptop...")
-    mc.set_color(0, 0, 255)  # Blue = waiting
+    print("Waiting for Laptop...")
+    mc.set_color(0, 0, 255)
     
     conn, addr = server.accept()
     print(f"✅ Connected: {addr}")
-    
-    mc.set_color(0, 255, 255)  # Cyan = connected
+    mc.set_color(0, 255, 255)
 
     while True:
         try:
@@ -113,61 +117,41 @@ while True:
             if command["cmd"] == "move":
                 coords = command["coords"]
                 speed = command.get("speed", 30)
+                mode = command.get("mode", 0)  # 0=angular, 1=linear
                 
-                print(f"\n📥 Move Command Received:")
-                print(f"   Coords: {coords}")
-                print(f"   Speed: {speed}")
+                print(f"\n📥 Received move command:")
+                print(f"   Target: X={coords[0]:.1f}, Y={coords[1]:.1f}, Z={coords[2]:.1f}")
+                print(f"   Angles: RX={coords[3]:.1f}, RY={coords[4]:.1f}, RZ={coords[5]:.1f}")
+                print(f"   Speed: {speed}, Mode: {mode}")
                 
-                # Validate
                 if not is_valid_coords(coords):
                     print(f"❌ Invalid coordinates")
                     conn.send(b"ERROR:OUT_OF_RANGE\n")
                     continue
                 
-                # Turn YELLOW
                 mc.set_color(255, 255, 0)
                 print(f"🟡 Executing movement...")
                 
-                # SEND COORDS - Mode 0 for angular interpolation
-                # This is the EXACT way from documentation
-                mc.send_coords(coords, speed, 0)
+                # Send target pose to robot
+                mc.send_coords(coords, speed, mode)
                 
                 # Wait a bit for movement to start
                 time.sleep(0.3)
                 
-                # Check if robot is actually moving
-                print(f"⏳ Checking movement status...")
+                # Short wait before checking movement state
+                time.sleep(0.5)
+                
+                # Wait for motion to finish, with timeout as safety
+                timeout = 10  # seconds
                 start_time = time.time()
-                was_moving = False
-                
-                while time.time() - start_time < 15:  # 15 second timeout
-                    if mc.is_moving():
-                        if not was_moving:
-                            print(f"   ✅ Robot started moving!")
-                            was_moving = True
-                        time.sleep(0.1)
-                    elif was_moving:
-                        # Was moving, now stopped = done
-                        print(f"   ✅ Movement completed!")
+                while mc.is_moving():
+                    if time.time() - start_time > timeout:
+                        print("⚠️ Movement timeout - continuing anyway")
                         break
-                    else:
-                        # Never started moving
-                        time.sleep(0.1)
+                    time.sleep(0.1)
                 
-                if not was_moving:
-                    print(f"   ⚠️ Robot did not move!")
-                    print(f"   Possible reasons:")
-                    print(f"   - Target same as current position")
-                    print(f"   - Position unreachable (inverse kinematics failed)")
-                    print(f"   - Motors not engaged")
-                
-                # Get final position
-                try:
-                    final = mc.get_coords()
-                    print(f"   Final position: {final}")
-                except:
-                    pass
-                
+                print(f"✅ Movement complete!")
+                mc.set_color(0, 255, 0)
                 conn.send(b"OK:COMPLETE\n")
                 
             elif command["cmd"] == "color":
@@ -192,4 +176,4 @@ while True:
             
     conn.close()
     print("Connection closed.")
-    mc.set_color(0, 0, 255)  # Back to blue
+    mc.set_color(0, 0, 255)
