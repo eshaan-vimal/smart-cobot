@@ -200,7 +200,7 @@ def mouse_callback(event, x, y, flags, param):
         print("="*60)
 
 # --- MAIN LOOP ---
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 

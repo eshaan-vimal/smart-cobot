@@ -124,7 +124,8 @@ while True:
                 # CRITICAL FIX: send_coords() needs mode parameter!
                 # mode=0: angular interpolation (smoother, recommended)
                 # mode=1: linear interpolation (straight line path)
-                mc.send_coords(coords, speed, 0)
+                print("coordinate array:", coords)
+                mc.send_coords(coords, speed)
                 
                 print(f"⏳ Waiting for movement to complete...")
                 
