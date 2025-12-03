@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # --- CONFIGURATION ---
 load_dotenv()
 ROBOT_IP = os.getenv("ROBOT_IP") 
-ROBOT_PORT = 9000
+ROBOT_PORT = 5000
 
 # --- CUSTOM CLIENT ---
 class CustomRobotClient:
