@@ -155,7 +155,9 @@ print("="*60)
 
 # Load calibration matrix
 try:
-    matrix = np.load("calibration_matrix.npy")
+    base = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base, "..", "calibration_matrix.npy")
+    matrix = np.load(path)
     print("✅ Calibration matrix loaded")
 except:
     print("❌ Error: calibration_matrix.npy not found!")

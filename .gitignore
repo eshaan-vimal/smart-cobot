@@ -1,3 +1,5 @@
 myenv
+__pycache__
 .env
 calibration_matrix.npy
+yolov8n.pt

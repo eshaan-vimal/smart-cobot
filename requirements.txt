@@ -7,3 +7,5 @@ google-genai
 python-dotenv
 pymycobot
 mediapipe
+pybullet
+ultralytics

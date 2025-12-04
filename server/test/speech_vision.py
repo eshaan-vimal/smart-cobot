@@ -34,7 +34,9 @@ print(f"✅ Using model: {MODEL_ID}")
 # Load camera→robot matrix if available
 print("\nChecking calibration...")
 try:
-    matrix = np.load("calibration_matrix.npy")
+    base = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base, "..", "calibration_matrix.npy")
+    matrix = np.load(path)
     print("✅ Calibration matrix loaded")
     has_calibration = True
 except:
@@ -157,8 +159,6 @@ while True:
     # Overlay instructions
     cv2.putText(display, "ENTER: Voice | T: Type | Q: Quit", (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-    cv2.putText(display, f"Model: {MODEL_ID}", (10, 55),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 0), 1)
     
     if has_calibration:
         cv2.putText(display, "Calibration: Loaded", (10, 75),
