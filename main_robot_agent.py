@@ -158,7 +158,7 @@ print("="*60)
 # Initialize Gemini client
 print("\nInitializing Gemini...")
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_ID = "gemini-2.0-flash"  # gemini-2.0-flash or gemini-robotics-er-1.5-preview
+MODEL_ID = "gemini-robotics-er-1.5-preview"  # gemini-2.0-flash or gemini-robotics-er-1.5-preview
 print(f"✅ Using model: {MODEL_ID}")
 
 # Load calibration homography
@@ -293,7 +293,7 @@ def listen_for_command():
         r.adjust_for_ambient_noise(source, duration=0.5)
         print("\n🎤 Listening... Speak now!")
         try:
-            audio = r.listen(source, timeout=7, phrase_time_limit=5)
+            audio = r.listen(source, timeout=7, phrase_time_limit=7)
             text = r.recognize_google(audio)
             return text
         except sr.WaitTimeoutError:

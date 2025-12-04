@@ -6,3 +6,4 @@ PyAudio
 google-genai
 python-dotenv
 pymycobot
+mediapipe
