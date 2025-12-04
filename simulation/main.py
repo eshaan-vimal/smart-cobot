@@ -1,4 +1,5 @@
 import time
+import os
 import cv2
 import numpy as np
 
@@ -27,7 +28,9 @@ def main_loop():
         print("=== Capturing Initial Frame ===")
         rgb_img, depth_buf = sim.get_camera_image()
         bgr_img = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
-        cv2.imwrite("initial_view.jpg", bgr_img)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        save_path = os.path.join(script_dir, "initial_view.jpg") 
+        cv2.imwrite(save_path, bgr_img)
         print("Saved 'initial_view.jpg'.\n")
         
         print("=== Starting Visual Servoing Loop ===")

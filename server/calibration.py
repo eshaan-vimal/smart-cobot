@@ -14,6 +14,7 @@ HOW IT WORKS:
 - The matrix is saved to calibration_matrix.npy
 """
 
+import os
 import cv2
 import numpy as np
 
@@ -172,7 +173,9 @@ while True:
             print(f"  {corner_names[i]}: ({rx:.1f}, {ry:.1f}) vs expected ({robot_pt[0]:.1f}, {robot_pt[1]:.1f}) | Error: ({error_x:.2f}, {error_y:.2f})")
         
         # Save the matrix
-        np.save("calibration_matrix.npy", matrix)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        save_path = os.path.join(script_dir, "calibration_matrix.npy")
+        np.save(save_path, matrix)
         print("\n✅ Saved transformation matrix to 'calibration_matrix.npy'")
         print("="*60)
         
